@@ -1,6 +1,21 @@
 spring:
   application:
     name: orchestrator
+  r2dbc:
+    url: r2dbc:mysql://${mysql.host}:3306/orchestrator
+    username: ${RDBMS_USERNAME}
+    password: ${RDBMS_PASSWORD}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    url: jdbc:mysql://${mysql.host}:3306/orchestrator
+    user: ${spring.r2dbc.username}
+    password: ${spring.r2dbc.password}
+    locations: classpath:db/migration
+
+mysql:
+  host: ${RDBMS_URL}
 
 # consume
 consume:

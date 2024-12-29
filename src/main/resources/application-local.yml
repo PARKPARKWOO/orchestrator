@@ -3,6 +3,8 @@ spring:
     activate:
       on-profile: local
 
+mysql:
+  host: localhost
 
 consume:
   auth:

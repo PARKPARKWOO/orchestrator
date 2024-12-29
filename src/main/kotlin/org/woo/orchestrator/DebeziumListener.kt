@@ -3,8 +3,6 @@ package org.woo.orchestrator
 import io.debezium.config.Configuration
 import io.debezium.engine.ChangeEvent
 import io.debezium.engine.DebeziumEngine
-import io.debezium.engine.RecordChangeEvent
-import io.debezium.engine.format.ChangeEventFormat
 import io.debezium.engine.format.Json
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy

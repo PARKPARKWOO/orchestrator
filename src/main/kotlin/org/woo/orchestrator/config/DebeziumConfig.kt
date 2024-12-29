@@ -19,7 +19,7 @@ class DebeziumConfig(
     companion object {
         private const val MYSQL_PORT = 3306
         private const val AUTH_SCHEMA = "auth"
-        private const val TOPIC_PREFIX = "cdc_"
+        private const val TOPIC_PREFIX = "cdc"
     }
 
     @Bean
