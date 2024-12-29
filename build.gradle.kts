@@ -5,7 +5,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.6"
 }
 
-group = "org.woo"
+group = "org.woo.orchestrator"
 version = "0.0.1-SNAPSHOT"
 
 java {
@@ -16,23 +16,14 @@ java {
 
 repositories {
     mavenCentral()
-}
-
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-    implementation("org.apache.kafka:kafka-streams")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-    implementation("org.springframework.kafka:spring-kafka")
-    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("io.projectreactor:reactor-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("org.springframework.kafka:spring-kafka-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    maven {
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/PARKPARKWOO/common-module")
+        credentials {
+            username = project.findProperty("gpr.user")?.toString() ?: System.getenv("GITHUB_USERNAME")
+            password = project.findProperty("gpr.key")?.toString() ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
 }
 
 kotlin {
@@ -43,4 +34,34 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+
+    // kafka
+    implementation("org.springframework.kafka:spring-kafka")
+    implementation("org.apache.kafka:kafka-streams")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
+
+    // debezium
+    implementation("io.debezium:debezium-embedded:3.0.6.Final")
+    implementation("io.debezium:debezium-api:3.0.6.Final")
+    implementation("io.debezium:debezium-connector-mysql:3.0.6.Final")
+
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
+
+    implementation("org.woo:domain-auth:+")
 }

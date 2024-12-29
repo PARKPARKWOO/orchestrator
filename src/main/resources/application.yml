@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: orchestrator
+
+# consume
+consume:
+  auth:
+    database:
+      host: ${AUTH_RDBMS_URL}
+      user: ${AUTH_RDBMS_USER}
+      password: ${AUTH_RDBMS_PASSWORD}
+  kafka:
+    bootstrap:
+      server: ${KAFKA_HOST}

@@ -1,0 +1,16 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+
+consume:
+  auth:
+    database:
+      host: localhost
+      user: root
+      password: 1234
+
+  kafka:
+    bootstrap:
+      server: localhost:9092
