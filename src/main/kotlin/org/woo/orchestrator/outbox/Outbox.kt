@@ -12,8 +12,6 @@ class Outbox(
     val id: Long,
     @Column("aggregate_id")
     val aggregateId: String,
-    @Column("aggregate_type")
-    val aggregateType: String,
     @Column("payload")
     val payload: String,
     @Column("event_type")
@@ -24,14 +22,18 @@ class Outbox(
     val createdAt: LocalDateTime,
 ) {
     companion object {
-        fun create(aggregateId: String, aggregateType: String, payload: String, eventType: EventType): Outbox = Outbox(
-            id = 0L,
-            aggregateId = aggregateId,
-            aggregateType = aggregateType,
-            payload = payload,
-            eventType = eventType.name,
-            status = TransactionStatus.PENDING.name,
-            createdAt = LocalDateTime.now(),
-        )
+        fun create(
+            aggregateId: String,
+            payload: String,
+            eventType: EventType,
+        ): Outbox =
+            Outbox(
+                id = 0L,
+                aggregateId = aggregateId,
+                payload = payload,
+                eventType = eventType.name,
+                status = TransactionStatus.PENDING.name,
+                createdAt = LocalDateTime.now(),
+            )
     }
 }

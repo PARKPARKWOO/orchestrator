@@ -1,0 +1,49 @@
+@startuml
+start
+group debezium-thread
+    :Debezium이 DB의 변경 감지 (INSERT, UPDATE, DELETE);
+    :Aggregate / Outbox Entity 생성 (PENDING);
+end group
+
+group event-polling(background)
+    :Aggregate by PENDING 조회;
+    -> Aggregate TransactionStatus Process 로 변경;
+    :Outbox by AggregateId 조회;
+
+split
+    :Outbox1;
+    detach
+split again
+    :Outbox2;
+    detach
+split end
+
+:Event 전파(Kafka);
+
+if (Event 전송 성공?) then (Yes)
+    :Outbox 테이블에서 상태를 'Processed'로 변경;
+    if (Transaction 성공?) (Yes)
+        :전송받은 서버에서 Transaction 성공시 'Done'으로 변경;
+    else (No)
+        :Outbox Status compensation 변경;
+    endif
+else (No)
+    if (Retry 가능?) then (Yes)
+        :재전송 시도;
+    else (No)
+        :Outbox 테이블에서 상태를 'Failed'로 변경;
+        :DLQ로 저장 및 알림;
+    endif
+endif
+end group
+:Aggregate Status Process 조회;
+-> Outbox Table 조회;
+if (Transaction 전체 성공?) then (Yes)
+    :Aggregate / Outbox Table 삭제;
+
+else (No)
+    :Outbox Status 'compensation' 조회;
+    :보상트랜잭션 이벤트 전송;
+endif
+stop
+@enduml
