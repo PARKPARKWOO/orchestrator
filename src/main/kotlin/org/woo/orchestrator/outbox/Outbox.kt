@@ -11,7 +11,7 @@ class Outbox(
     @Column("id")
     val id: Long,
     @Column("aggregate_id")
-    val aggregateId: String,
+    val aggregateId: Long,
     @Column("payload")
     val payload: String,
     @Column("event_type")
@@ -23,7 +23,7 @@ class Outbox(
 ) {
     companion object {
         fun create(
-            aggregateId: String,
+            aggregateId: Long,
             payload: String,
             eventType: EventType,
         ): Outbox =
@@ -35,5 +35,9 @@ class Outbox(
                 status = TransactionStatus.PENDING.name,
                 createdAt = LocalDateTime.now(),
             )
+    }
+
+    suspend fun send() {
+        this.status = TransactionStatus.COMMIT.name
     }
 }

@@ -15,7 +15,10 @@ spring:
     locations: classpath:db/migration
 
 mysql:
+  driver: jdbc:mysql://
   host: ${RDBMS_URL}
+  port: 3306
+  schema: orchestrator
 
 # consume
 consume:

@@ -36,7 +36,6 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -60,6 +59,7 @@ dependencies {
     implementation("io.debezium:debezium-embedded:3.0.6.Final")
     implementation("io.debezium:debezium-api:3.0.6.Final")
     implementation("io.debezium:debezium-connector-mysql:3.0.6.Final")
+    implementation("io.debezium:debezium-storage-jdbc:3.0.6.Final")
 
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 

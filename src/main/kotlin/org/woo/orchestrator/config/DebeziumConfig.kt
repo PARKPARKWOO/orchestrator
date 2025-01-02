@@ -15,8 +15,14 @@ class DebeziumConfig(
 //    현재는 단일 인스턴스로 적용한다.
     @Value("\${consume.kafka.bootstrap.server}")
     val kafkaHost: String,
-    @Value("\${spring.r2dbc.url}")
+    @Value("\${mysql.host}")
     val debeziumHost: String,
+    @Value("\${mysql.driver}")
+    val driver: String,
+    @Value("\${mysql.port}")
+    val port: Int,
+    @Value("\${mysql.schema}")
+    val schema: String,
     @Value("\${spring.r2dbc.username}")
     val debeziumUser: String,
     @Value("\${spring.r2dbc.password}")
@@ -25,7 +31,7 @@ class DebeziumConfig(
     companion object {
         private const val MYSQL_PORT = 3306
         private const val AUTH_SCHEMA = "auth"
-        private const val TOPIC_PREFIX = "cdcasas"
+        private const val TOPIC_PREFIX = "cdc"
         private const val MYSQL_CONNECTOR = "io.debezium.connector.mysql.MySqlConnector"
         private const val AUTH_TABLE_LIST = "user"
     }
@@ -37,7 +43,7 @@ class DebeziumConfig(
             .with("name", "auth-mysql-connector")
             .with("connector.class", MYSQL_CONNECTOR)
             .with("offset.storage", "io.debezium.storage.jdbc.offset.JdbcOffsetBackingStore")
-            .with("offset.storage.jdbc.url", debeziumHost)
+            .with("offset.storage.jdbc.url", "$driver$debeziumHost:$port/$schema")
             .with("offset.storage.jdbc.user", debeziumUser)
             .with("offset.storage.jdbc.password", debeziumPassword)
             .with("offset.flush.interval.ms", "60000")
