@@ -33,7 +33,9 @@ class DebeziumConfig(
         private const val AUTH_SCHEMA = "auth"
         private const val TOPIC_PREFIX = "cdc"
         private const val MYSQL_CONNECTOR = "io.debezium.connector.mysql.MySqlConnector"
-        private const val AUTH_TABLE_LIST = "user"
+
+//       관리 해야하는 테이블들이 많아져 전파가 필요한 이벤트는 모두 outbox table 로 관리한다.
+        private const val TARGET_TABLE = "outbox"
     }
 
     @Bean("authConnector")
@@ -60,6 +62,6 @@ class DebeziumConfig(
             .with("topic.prefix", TOPIC_PREFIX)
             .with("schema.history.internal.kafka.bootstrap.servers", kafkaHost)
             .with("schema.history.internal.kafka.topic", "why")
-            .with("table.include.list", AUTH_TABLE_LIST)
+            .with("table.include.list", TARGET_TABLE)
             .build()
 }

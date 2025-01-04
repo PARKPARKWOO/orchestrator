@@ -3,7 +3,6 @@ package org.woo.orchestrator.outbox.adapter
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitRowsUpdated
 import org.springframework.stereotype.Component
-import org.woo.orchestrator.outbox.TransactionStatus
 
 @Component
 class OutboxAdapter(
@@ -12,7 +11,6 @@ class OutboxAdapter(
     companion object {
         // column
         const val ID_COLUMN = "id"
-        const val AGGREGATE_ID_COLUMN = "aggregateId"
         const val STATUS_COLUMN = "status"
 
         // bind
@@ -21,13 +19,17 @@ class OutboxAdapter(
         const val CURRENT_STATUS_BIND = "currentStatus"
     }
 
-    override suspend fun markAsSent(id: Long): Int =
+    override suspend fun updateStatus(
+        id: Long,
+        previousStatus: String,
+        currentStatus: String,
+    ): Int =
         databaseClient
             .sql(
                 "UPDATE outbox set $STATUS_COLUMN = :$STATUS_BIND WHERE $ID_COLUMN = :$ID_BIND AND $STATUS_COLUMN = :$CURRENT_STATUS_BIND",
-            ).bind(STATUS_BIND, TransactionStatus.IN_PROGRESS.name)
+            ).bind(STATUS_BIND, previousStatus)
             .bind(ID_BIND, id)
-            .bind(CURRENT_STATUS_BIND, TransactionStatus.PENDING.name)
+            .bind(CURRENT_STATUS_BIND, currentStatus)
             .fetch()
             .awaitRowsUpdated()
             .toInt()

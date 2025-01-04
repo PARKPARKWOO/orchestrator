@@ -7,7 +7,7 @@ end group
 
 group event-polling(background)
     :Aggregate by PENDING 조회;
-    -> Aggregate TransactionStatus Process 로 변경;
+    -> Aggregate TransactionStatus IN_PROGRESS 로 변경;
     :Outbox by AggregateId 조회;
 
 split
