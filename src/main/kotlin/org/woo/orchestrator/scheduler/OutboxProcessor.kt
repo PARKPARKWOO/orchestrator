@@ -8,14 +8,14 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import org.springframework.stereotype.Component
-import org.woo.orchestrator.factory.StepFactory
 import org.woo.orchestrator.outbox.Aggregate
 import org.woo.orchestrator.outbox.AggregateRepository
-import org.woo.orchestrator.outbox.Outbox
+import org.woo.orchestrator.outbox.EventType
 import org.woo.orchestrator.outbox.OutboxRepository
 import org.woo.orchestrator.outbox.TransactionStatus
 import org.woo.orchestrator.outbox.adapter.AggregatePort
 import org.woo.orchestrator.outbox.adapter.OutboxPort
+import org.woo.orchestrator.step.StepFactory
 import java.util.concurrent.Executors
 
 @Component
@@ -58,19 +58,12 @@ class OutboxProcessor(
         aggregatePort.markAsSent(aggregate.id)
         val outboxes = outboxRepository.findByAggregateId(aggregate.id).asFlow()
         aggregate.setOutbox(outboxes.toList())
-        // FIXME: 여기 exception 발생함
-//        val step = stepFactory.findStep(EventType.valueOf(aggregate.type))
-//        step.execute(step.generateCommand(outbox))
+        val step = stepFactory.findStep(EventType.valueOf(aggregate.type))
         aggregate.outboxes.forEach { outbox ->
             updateScope.launch {
+                step.propagateEvent(outbox)
                 outboxPort.markAsSent(outbox.id)
             }
         }
-    }
-
-    suspend fun markAsFailed(outbox: Outbox) {
-    }
-
-    suspend fun deleteEvent(outbox: Outbox) {
     }
 }

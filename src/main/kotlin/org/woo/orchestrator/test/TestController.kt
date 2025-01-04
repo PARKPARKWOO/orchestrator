@@ -1,4 +1,4 @@
-package org.woo.orchestrator.assa
+package org.woo.orchestrator.test
 
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController

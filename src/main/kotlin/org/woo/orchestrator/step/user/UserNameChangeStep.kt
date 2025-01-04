@@ -1,11 +1,13 @@
 package org.woo.orchestrator.step.user
 
+import org.springframework.stereotype.Component
 import org.woo.orchestrator.outbox.EventType
 import org.woo.orchestrator.outbox.Outbox
-import org.woo.orchestrator.step.SagaStep
+import org.woo.orchestrator.step.SagaStepTemplate
 import org.woo.orchestrator.step.StepCommand
 
-class AsasStep : SagaStep {
+@Component
+class UserNameChangeStep : SagaStepTemplate() {
     override val eventType: EventType = EventType.UPDATE_USER_NAME
 
     override suspend fun execute(command: StepCommand) {

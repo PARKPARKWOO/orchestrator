@@ -2,7 +2,7 @@ spring:
   main:
     web-application-type: reactive
   application:
-    name: orchestrator
+    name: ${spring.config.activate.on-profile}-orchestrator
   r2dbc:
     url: r2dbc:mysql://${mysql.host}:3306/orchestrator
     username: ${RDBMS_USERNAME}
@@ -15,6 +15,10 @@ spring:
     user: ${spring.r2dbc.username}
     password: ${spring.r2dbc.password}
     locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${consume.kafka.bootstrap.server}
+    consumer:
+      group-id: ${spring.application.name}
 
 mysql:
   driver: jdbc:mysql://
