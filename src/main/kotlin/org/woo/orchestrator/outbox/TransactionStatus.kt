@@ -5,4 +5,5 @@ enum class TransactionStatus {
     COMPENSATION,
     DONE,
     COMMIT,
+    IN_PROGRESS,
 }

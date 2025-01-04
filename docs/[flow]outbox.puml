@@ -21,7 +21,7 @@ split end
 :Event 전파(Kafka);
 
 if (Event 전송 성공?) then (Yes)
-    :Outbox 테이블에서 상태를 'Processed'로 변경;
+    :Outbox 테이블에서 상태를 'IN_PROGRESS'로 변경;
     if (Transaction 성공?) then (Yes)
         :전송받은 서버에서 Transaction 성공시 'Done'으로 변경;
     else (No)
