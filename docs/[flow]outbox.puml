@@ -2,6 +2,10 @@
 start
 group debezium-thread
     :Debezium이 DB의 변경 감지 (INSERT, UPDATE, DELETE);
+    -> application event 발행;
+end group
+
+group application-event-listener
     :Aggregate / Outbox Entity 생성 (PENDING);
 end group
 

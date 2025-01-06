@@ -2,7 +2,8 @@ CREATE TABLE aggregate
 (
     id     BIGINT AUTO_INCREMENT PRIMARY KEY,
     type   VARCHAR(255) NOT NULL,
-    status VARCHAR(50) DEFAULT 'PENDING' -- 메시지 상태 (e.g., PENDING, PROCESSED)
+    status VARCHAR(50) DEFAULT 'PENDING', -- 메시지 상태 (e.g., PENDING, PROCESSED)
+    record_operation varchar(10) not null
 );
 
 CREATE TABLE outbox

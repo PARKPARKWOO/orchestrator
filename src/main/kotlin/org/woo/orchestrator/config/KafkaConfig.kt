@@ -1,8 +1,8 @@
 package org.woo.orchestrator.config
 
 import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
-import org.apache.kafka.connect.json.JsonSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -24,25 +24,33 @@ class KafkaConfig(
 ) {
     @Bean
     fun consumerFactory(): ConsumerFactory<String, String> {
-        val props = generateKafkaProperties()
+        val props = generateConsumerConfig()
         return DefaultKafkaConsumerFactory(props)
     }
 
-    private fun generateKafkaProperties(): Map<String, Any> {
+    private fun generateConsumerConfig(): Map<String, Any> {
         val props: MutableMap<String, Any> = mutableMapOf()
         props[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = boostrapServers
         props[ConsumerConfig.GROUP_ID_CONFIG] = groupId
         props[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = JsonSerializer::class.java
+        props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        return props
+    }
+
+    private fun generateProducerConfig(): Map<String, Any> {
+        val props: MutableMap<String, Any> = mutableMapOf()
+        props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = boostrapServers
+        props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
         return props
     }
 
     @Bean
-    fun producerFactory(): ProducerFactory<String, Any> {
-        val props = generateKafkaProperties()
+    fun producerFactory(): ProducerFactory<String, String> {
+        val props = generateProducerConfig()
         return DefaultKafkaProducerFactory(props)
     }
 
     @Bean
-    fun kafkaTemplate(): KafkaTemplate<String, Any> = KafkaTemplate(producerFactory())
+    fun kafkaTemplate(): KafkaTemplate<String, String> = KafkaTemplate(producerFactory())
 }

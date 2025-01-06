@@ -1,4 +1,4 @@
-package org.woo.orchestrator
+package org.woo.orchestrator.debezium
 
 import io.debezium.config.Configuration
 import io.debezium.engine.ChangeEvent
@@ -6,20 +6,26 @@ import io.debezium.engine.DebeziumEngine
 import io.debezium.engine.format.Json
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 @Component
-class DebeziumListener(
+class AuthDebeziumListener(
+    @Qualifier("authConnector")
     private final val debeziumConfig: Configuration,
+    val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     private val executor: Executor = Executors.newSingleThreadExecutor()
 
-    private val debeziumEngine: DebeziumEngine<ChangeEvent<String, String>> = DebeziumEngine.create(Json::class.java)
-        .using(debeziumConfig.asProperties())
-        .notifying(::handleEvent)
-        .build()
+    private val debeziumEngine: DebeziumEngine<ChangeEvent<String, String>> =
+        DebeziumEngine
+            .create(Json::class.java)
+            .using(debeziumConfig.asProperties())
+            .notifying(::handleEvent)
+            .build()
 
     @PostConstruct
     fun start() {
@@ -32,7 +38,7 @@ class DebeziumListener(
     }
 
     private fun handleEvent(event: ChangeEvent<String, String>) {
-        println(event)
-        println()
+        val domainEvent = event.getPayload()
+        applicationEventPublisher.publishEvent(domainEvent)
     }
 }

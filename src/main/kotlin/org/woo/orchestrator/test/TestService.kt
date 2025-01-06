@@ -5,6 +5,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
+import org.woo.orchestrator.constant.RecordOperation
 import org.woo.orchestrator.outbox.Aggregate
 import org.woo.orchestrator.outbox.AggregateRepository
 import org.woo.orchestrator.outbox.EventType
@@ -23,7 +24,7 @@ class TestService(
     suspend fun init() {
         for (i in 0..100) {
             CoroutineScope(executor).launch {
-                val aggregate = Aggregate(0L, EventType.UPDATE_USER_NAME.name, TransactionStatus.PENDING.name)
+                val aggregate = Aggregate(0L, EventType.UPDATE_USER_NAME.name, TransactionStatus.PENDING.name, RecordOperation.UPDATE.name)
                 val entity = aggregateRepository.save(aggregate).awaitSingle()
                 val payload =
                     mapOf(

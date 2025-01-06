@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
 import org.springframework.stereotype.Component
+import org.woo.orchestrator.constant.RecordOperation
 import org.woo.orchestrator.outbox.Aggregate
 import org.woo.orchestrator.outbox.usecase.AggregateUseCase
 import org.woo.orchestrator.outbox.usecase.OutboxUseCase
@@ -43,7 +44,7 @@ class OutboxProcessor(
         outboxes.forEach { outbox ->
             updateScope.launch {
                 //  실패시 DLQ 에 넣기
-                outboxUseCase.propagateEvent(outbox)
+                outboxUseCase.propagateEvent(outbox, RecordOperation.valueOf(aggregate.recordOperation))
             }
         }
         updateScope.launch {

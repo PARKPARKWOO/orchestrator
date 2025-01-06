@@ -1,8 +1,12 @@
 package org.woo.orchestrator.config
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.kafka.support.JacksonUtils
+import org.woo.orchestrator.constant.DomainService.AUTH
 
 @Configuration
 class DebeziumConfig(
@@ -22,21 +26,27 @@ class DebeziumConfig(
     @Value("\${mysql.port}")
     val port: Int,
     @Value("\${mysql.schema}")
-    val schema: String,
+    val debeziumSchema: String,
     @Value("\${spring.r2dbc.username}")
     val debeziumUser: String,
     @Value("\${spring.r2dbc.password}")
     val debeziumPassword: String,
+    @Value("\${spring.config.activate.on-profile}")
+    val profile: String,
 ) {
     companion object {
         private const val MYSQL_PORT = 3306
-        private const val AUTH_SCHEMA = "auth"
         private const val TOPIC_PREFIX = "cdc"
         private const val MYSQL_CONNECTOR = "io.debezium.connector.mysql.MySqlConnector"
 
-//       관리 해야하는 테이블들이 많아져 전파가 필요한 이벤트는 모두 outbox table 로 관리한다.
+        //       관리 해야하는 테이블들이 많아져 전파가 필요한 이벤트는 모두 outbox table 로 관리한다.
         private const val TARGET_TABLE = "outbox"
+
+        private const val SCHEMA_HISTORY_TOPIC = "schema-history"
     }
+
+    @Bean
+    fun mapper(): ObjectMapper = JacksonUtils.enhancedObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
 
     @Bean("authConnector")
     fun authConnector(): io.debezium.config.Configuration =
@@ -45,7 +55,7 @@ class DebeziumConfig(
             .with("name", "auth-mysql-connector")
             .with("connector.class", MYSQL_CONNECTOR)
             .with("offset.storage", "io.debezium.storage.jdbc.offset.JdbcOffsetBackingStore")
-            .with("offset.storage.jdbc.url", "$driver$debeziumHost:$port/$schema")
+            .with("offset.storage.jdbc.url", "$driver$debeziumHost:$port/$debeziumSchema")
             .with("offset.storage.jdbc.user", debeziumUser)
             .with("offset.storage.jdbc.password", debeziumPassword)
             .with("offset.flush.interval.ms", "60000")
@@ -53,15 +63,15 @@ class DebeziumConfig(
             .with("database.port", MYSQL_PORT)
             .with("database.user", authMysqlUser)
             .with("database.password", authMysqlPassword)
-            .with("database.include.list", AUTH_SCHEMA)
+            .with("database.include.list", AUTH.database)
             .with("include.schema.changes", "false")
             .with("database.server.id", "1")
-//            .with("database.server.name", "customer-mysql-db-server")
+            .with("database.server.name", "auth-mysql-db-server")
             .with("database.history", "io.debezium.relational.history.FileDatabaseHistory")
             .with("database.history.file.filename", "/tmp/dbhistory.dat")
             .with("topic.prefix", TOPIC_PREFIX)
             .with("schema.history.internal.kafka.bootstrap.servers", kafkaHost)
-            .with("schema.history.internal.kafka.topic", "why")
-            .with("table.include.list", TARGET_TABLE)
+            .with("schema.history.internal.kafka.topic", "$profile.${AUTH.database}.$SCHEMA_HISTORY_TOPIC")
+            .with("table.include.list", "$${AUTH.database}.$TARGET_TABLE")
             .build()
 }

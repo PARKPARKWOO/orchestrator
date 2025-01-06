@@ -1,5 +1,6 @@
 package org.woo.orchestrator.workflow
 
+import org.woo.orchestrator.constant.RecordOperation
 import org.woo.orchestrator.outbox.EventType
 import org.woo.orchestrator.outbox.Outbox
 
@@ -11,5 +12,8 @@ interface SagaWorkflow {
 
     suspend fun rollback(command: WorkflowCommand)
 
-    suspend fun generateCommand(outbox: Outbox): WorkflowCommand
+    suspend fun generateCommand(
+        outbox: Outbox,
+        recordOperation: RecordOperation,
+    ): WorkflowCommand
 }
