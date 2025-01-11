@@ -4,7 +4,7 @@ spring:
   main:
     web-application-type: reactive
   application:
-    name: ${spring.config.activate.on-profile}-orchestrator
+    name: ${spring.profiles.active}-orchestrator
   r2dbc:
     url: r2dbc:mysql://${mysql.host}:3306/orchestrator
     username: ${RDBMS_USERNAME}
