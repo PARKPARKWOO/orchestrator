@@ -31,7 +31,7 @@ class DebeziumConfig(
     val debeziumUser: String,
     @Value("\${spring.r2dbc.password}")
     val debeziumPassword: String,
-    @Value("\${spring.config.activate.on-profile}")
+    @Value("\${spring.profiles.active}")
     val profile: String,
 ) {
     companion object {
