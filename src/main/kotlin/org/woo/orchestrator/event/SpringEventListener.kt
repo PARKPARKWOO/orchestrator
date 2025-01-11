@@ -13,13 +13,13 @@ import java.util.concurrent.Executors
 class SpringEventListener(
     val aggregateUseCase: AggregateUseCase,
 ) {
-    val executor = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    private val executor = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    private val scope = CoroutineScope(executor)
 
     @EventListener
     fun subscribe(event: DomainEvent) {
-        CoroutineScope(executor).launch {
+        scope.launch {
             aggregateUseCase.saveOutbox(event)
-            println("save event")
         }
     }
 }
