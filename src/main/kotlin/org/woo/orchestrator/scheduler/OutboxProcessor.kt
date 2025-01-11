@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.springframework.stereotype.Component
 import org.woo.orchestrator.constant.RecordOperation
@@ -28,6 +29,7 @@ class OutboxProcessor(
             while (true) {
                 aggregateUseCase.fetchPendingAggregate().forEach { aggregate ->
                     consumeEvnet(aggregate)
+                    delay(100)
                 }
             }
         }
