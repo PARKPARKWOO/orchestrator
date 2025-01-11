@@ -21,6 +21,8 @@ spring:
     bootstrap-servers: ${consume.kafka.bootstrap.server}
     consumer:
       group-id: ${spring.application.name}
+  profiles:
+    active: dev
 
 mysql:
   driver: jdbc:mysql://
