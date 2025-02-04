@@ -43,6 +43,9 @@ class DebeziumConfig(
         private const val TARGET_TABLE = "outbox"
 
         private const val SCHEMA_HISTORY_TOPIC = "schema-history"
+
+        // 중복되지 않는 고유한 값 이어야 한다.
+        private const val DEBEZIUM_SERVER_ID_IN_MYSQL = "9999"
     }
 
     @Bean
@@ -65,7 +68,7 @@ class DebeziumConfig(
             .with("database.password", authMysqlPassword)
             .with("database.include.list", AUTH.database)
             .with("include.schema.changes", "false")
-            .with("database.server.id", "1")
+            .with("database.server.id", DEBEZIUM_SERVER_ID_IN_MYSQL)
             .with("database.server.name", "auth-mysql-db-server")
             .with("database.history", "io.debezium.relational.history.FileDatabaseHistory")
             .with("database.history.file.filename", "/tmp/dbhistory.dat")
