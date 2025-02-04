@@ -64,6 +64,7 @@ dependencies {
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
     implementation("org.woo:domain-auth:+")
+    implementation("org.woo:apm:+")
 
     // mysql and r2dbc
     runtimeOnly("com.mysql:mysql-connector-j")
@@ -73,4 +74,8 @@ dependencies {
     // flyway for db migration
     implementation("org.flywaydb:flyway-core:10.19.0")
     implementation("org.flywaydb:flyway-mysql:10.19.0")
+
+    // for metric
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 }

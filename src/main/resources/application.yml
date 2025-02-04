@@ -30,6 +30,15 @@ mysql:
   port: 3306
   schema: orchestrator
 
+pyroscope:
+  address: ${PYROSCOPE_SERVER_ADDRESS}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
 # consume
 consume:
   auth:
