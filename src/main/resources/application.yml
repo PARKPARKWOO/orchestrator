@@ -34,6 +34,9 @@ pyroscope:
   address: ${PYROSCOPE_SERVER_ADDRESS}
 
 management:
+  metrics:
+    tags:
+      application: ${spring.application.name}
   endpoints:
     web:
       exposure:
