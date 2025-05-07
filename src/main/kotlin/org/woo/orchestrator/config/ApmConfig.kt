@@ -61,7 +61,7 @@ class ApmConfig(
 
         internalStream
             .groupBy(
-                { _, ev -> "${ev.service.name}:${ev.path}" },
+                { _, ev -> ev.serviceName },
                 Grouped.with(Serdes.String(), internalSerd),
             ).windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)))
             .aggregate(
@@ -77,30 +77,30 @@ class ApmConfig(
                 Materialized.with(Serdes.String(), metricsSerd),
             ).toStream()
             .foreach { windowKey, stats ->
-                val uri = windowKey.key()
+                val serviceName = windowKey.key()
                 val total = stats.total.toDouble()
                 val success = stats.success.toDouble()
                 val failure = total - success
 
                 meterRegistry
-                    .counter("internal_api_calls_total", listOf(Tag.of("uri", uri)))
+                    .counter("internal_api_calls_total", listOf(Tag.of("serviceName", serviceName)))
                     .increment(total)
                 meterRegistry
-                    .counter("internal_api_calls_success", listOf(Tag.of("uri", uri)))
+                    .counter("internal_api_calls_success", listOf(Tag.of("serviceName", serviceName)))
                     .increment(success)
                 meterRegistry
-                    .counter("internal_api_calls_failure", listOf(Tag.of("uri", uri)))
+                    .counter("internal_api_calls_failure", listOf(Tag.of("serviceName", serviceName)))
                     .increment(failure)
 
                 // 실패율 게이지용 AtomicReference
-                val ref = internalFailureRateMap.computeIfAbsent(uri) { AtomicReference(0.0) }
+                val ref = internalFailureRateMap.computeIfAbsent(serviceName) { AtomicReference(0.0) }
                 val rate = if (stats.total > 0) failure / total else 0.0
                 ref.set(rate)
 
                 // gauge 등록: 매번 ref.get() 으로 읽어감
                 meterRegistry.gauge(
                     "internal_api_failure_rate",
-                    listOf(Tag.of("uri", uri)),
+                    listOf(Tag.of("serviceName", serviceName)),
                     ref,
                     AtomicReference<Double>::get,
                 )
