@@ -66,7 +66,7 @@ dependencies {
 
     implementation("org.woo:domain-auth:0.2.2")
     implementation("org.woo:apm:0.2.3")
-    implementation("org.woo:event:0.0.7")
+    implementation("org.woo:event:0.0.8")
 
     // mysql and r2dbc
     runtimeOnly("com.mysql:mysql-connector-j")
