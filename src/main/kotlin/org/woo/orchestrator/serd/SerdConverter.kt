@@ -1,5 +1,6 @@
 package org.woo.orchestrator.serd
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.apache.kafka.common.serialization.Deserializer
@@ -12,6 +13,7 @@ class SerdConverter<T>(
     private val mapper: ObjectMapper =
         ObjectMapper()
             .registerKotlinModule()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     override fun serializer(): Serializer<T> =
         Serializer { _, data ->
