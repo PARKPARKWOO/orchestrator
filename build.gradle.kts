@@ -64,8 +64,9 @@ dependencies {
 
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
-    implementation("org.woo:domain-auth:+")
-    implementation("org.woo:apm:+")
+    implementation("org.woo:domain-auth:0.2.2")
+    implementation("org.woo:apm:0.2.3")
+    implementation("org.woo:event:0.0.5")
 
     // mysql and r2dbc
     runtimeOnly("com.mysql:mysql-connector-j")

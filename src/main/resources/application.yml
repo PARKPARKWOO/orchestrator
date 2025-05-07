@@ -21,9 +21,11 @@ spring:
     bootstrap-servers: ${consume.kafka.bootstrap.server}
     consumer:
       group-id: ${spring.application.name}
+    streams:
+      application-id: ${spring.application.name}
+      bootstrap-servers: ${consume.kafka.bootstrap.server}
   profiles:
     active: dev
-
 mysql:
   driver: jdbc:mysql://
   host: ${RDBMS_URL}
