@@ -82,7 +82,7 @@ class ApmConfig(
                 val serviceName = windowKey.key()
                 val total = stats.total.toDouble()
                 val success = stats.success.toDouble()
-                val latency = stats.latency.toDouble()
+                val latency = stats.latency.toDouble() / total
                 val failure = total - success
 
                 meterRegistry
