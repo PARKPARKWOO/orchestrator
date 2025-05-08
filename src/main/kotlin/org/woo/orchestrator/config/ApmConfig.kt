@@ -36,6 +36,7 @@ class ApmConfig(
     private val internalSerd: SerdConverter<InternalApiCallEvent> = SerdConverter(InternalApiCallEvent::class.java)
     private val externalSerd: SerdConverter<ExternalApiCallEvent> = SerdConverter(ExternalApiCallEvent::class.java)
     private val metricsSerd = SerdConverter(ApiCallStats::class.java)
+    private val internalMetricsSerd = SerdConverter(InternalApiCallStats::class.java)
     private val internalFailureRateMap = ConcurrentHashMap<String, AtomicReference<Double>>()
     private val externalFailureRateMap = ConcurrentHashMap<String, AtomicReference<Double>>()
 
@@ -66,20 +67,22 @@ class ApmConfig(
             ).windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)))
             .aggregate(
                 // 초기값
-                { ApiCallStats(0L, 0L) },
+                { InternalApiCallStats(0L, 0L, 0L) },
                 // 집계함수: total+1, success+(isSuccess?1:0)
                 { _, ev, agg ->
-                    ApiCallStats(
+                    InternalApiCallStats(
                         total = agg.total + 1,
                         success = agg.success + if (ev.statusCode == 0) 1 else 0,
+                        latency = agg.latency + ev.durationMs,
                     )
                 },
-                Materialized.with(Serdes.String(), metricsSerd),
+                Materialized.with(Serdes.String(), internalMetricsSerd),
             ).toStream()
             .foreach { windowKey, stats ->
                 val serviceName = windowKey.key()
                 val total = stats.total.toDouble()
                 val success = stats.success.toDouble()
+                val latency = stats.latency.toDouble()
                 val failure = total - success
 
                 meterRegistry
@@ -88,6 +91,9 @@ class ApmConfig(
                 meterRegistry
                     .counter("internal_api_calls_success", listOf(Tag.of("serviceName", serviceName)))
                     .increment(success)
+                meterRegistry
+                    .counter("internal_api_calls_latency", listOf(Tag.of("serviceName", serviceName)))
+                    .increment(latency)
                 meterRegistry
                     .counter("internal_api_calls_failure", listOf(Tag.of("serviceName", serviceName)))
                     .increment(failure)
@@ -173,4 +179,10 @@ class ApmConfig(
 data class ApiCallStats(
     val total: Long = 0L,
     val success: Long = 0L,
+)
+
+data class InternalApiCallStats(
+    val total: Long = 0L,
+    val success: Long = 0L,
+    val latency: Long = 0L,
 )
