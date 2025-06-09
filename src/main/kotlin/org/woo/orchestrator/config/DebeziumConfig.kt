@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.support.JacksonUtils
 import org.woo.orchestrator.constant.DomainService.AUTH
+import org.woo.orchestrator.constant.DomainService.STORAGE
 
 @Configuration
 class DebeziumConfig(
@@ -66,7 +67,7 @@ class DebeziumConfig(
             .with("database.port", MYSQL_PORT)
             .with("database.user", authMysqlUser)
             .with("database.password", authMysqlPassword)
-            .with("database.include.list", AUTH.database)
+            .with("database.include.list", "${AUTH.database},${STORAGE.database}")
             .with("include.schema.changes", "false")
             .with("database.server.id", DEBEZIUM_SERVER_ID_IN_MYSQL)
             .with("database.server.name", "auth-mysql-db-server")
@@ -75,6 +76,6 @@ class DebeziumConfig(
             .with("topic.prefix", TOPIC_PREFIX)
             .with("schema.history.internal.kafka.bootstrap.servers", kafkaHost)
             .with("schema.history.internal.kafka.topic", "$profile.${AUTH.database}.$SCHEMA_HISTORY_TOPIC")
-            .with("table.include.list", "$${AUTH.database}.$TARGET_TABLE")
+            .with("table.include.list", "$${AUTH.database}.$TARGET_TABLE,${STORAGE.database}.$TARGET_TABLE")
             .build()
 }

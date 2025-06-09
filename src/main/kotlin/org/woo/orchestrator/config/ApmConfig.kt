@@ -39,6 +39,7 @@ class ApmConfig(
     private val internalMetricsSerd = SerdConverter(InternalApiCallStats::class.java)
     private val internalFailureRateMap = ConcurrentHashMap<String, AtomicReference<Double>>()
     private val externalFailureRateMap = ConcurrentHashMap<String, AtomicReference<Double>>()
+    private val prevInternal = ConcurrentHashMap<String, InternalApiCallStats>()
 
     @Bean
     fun trace(tracer: Tracer): WebFilter = TracingConfig.create(tracer)
@@ -53,12 +54,15 @@ class ApmConfig(
         builder: StreamsBuilder,
         streamsConfig: KafkaStreamsConfiguration,
     ): Topology {
-        // 내부/외부 토픽을 각각 Consumed.with 으로 읽어서 병합
         val internalStream =
             builder.stream(
                 ApiEventConstants.INTERNAL_API_CALL_TOPIC,
                 Consumed.with(Serdes.String(), internalSerd),
             )
+
+        // 실패율 및 평균 지연시간 게이지를 위한 맵
+        val failureRateGaugeMap = ConcurrentHashMap<String, AtomicReference<Double>>()
+        val avgLatencyGaugeMap = ConcurrentHashMap<String, AtomicReference<Double>>()
 
         internalStream
             .groupBy(
@@ -66,9 +70,7 @@ class ApmConfig(
                 Grouped.with(Serdes.String(), internalSerd),
             ).windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)))
             .aggregate(
-                // 초기값
-                { InternalApiCallStats(0L, 0L, 0L) },
-                // 집계함수: total+1, success+(isSuccess?1:0)
+                { InternalApiCallStats() },
                 { _, ev, agg ->
                     InternalApiCallStats(
                         total = agg.total + 1,
@@ -79,37 +81,25 @@ class ApmConfig(
                 Materialized.with(Serdes.String(), internalMetricsSerd),
             ).toStream()
             .foreach { windowKey, stats ->
-                val serviceName = windowKey.key()
+                val url = windowKey.key()
+                val tags = listOf(Tag.of("uri", url))
                 val total = stats.total.toDouble()
                 val success = stats.success.toDouble()
-                val latency = stats.latency.toDouble() / total
                 val failure = total - success
 
-                meterRegistry
-                    .counter("internal_api_calls_total", listOf(Tag.of("serviceName", serviceName)))
-                    .increment(total)
-                meterRegistry
-                    .counter("internal_api_calls_success", listOf(Tag.of("serviceName", serviceName)))
-                    .increment(success)
-                meterRegistry
-                    .counter("internal_api_calls_latency", listOf(Tag.of("serviceName", serviceName)))
-                    .increment(latency)
-                meterRegistry
-                    .counter("internal_api_calls_failure", listOf(Tag.of("serviceName", serviceName)))
-                    .increment(failure)
+                if (total > 0) meterRegistry.counter("internal_api_calls_total", tags).increment(total)
+                if (success > 0) meterRegistry.counter("internal_api_calls_success", tags).increment(success)
+                if (failure > 0) meterRegistry.counter("internal_api_calls_failure", tags).increment(failure)
 
-                // 실패율 게이지용 AtomicReference
-                val ref = internalFailureRateMap.computeIfAbsent(serviceName) { AtomicReference(0.0) }
-                val rate = if (stats.total > 0) failure / total else 0.0
-                ref.set(rate)
+                val failureRateRef = failureRateGaugeMap.computeIfAbsent(url) { AtomicReference(0.0) }
+                val rate = if (total > 0) failure / total else 0.0
+                failureRateRef.set(rate)
+                meterRegistry.gauge("internal_api_failure_rate", tags, failureRateRef, AtomicReference<Double>::get)
 
-                // gauge 등록: 매번 ref.get() 으로 읽어감
-                meterRegistry.gauge(
-                    "internal_api_failure_rate",
-                    listOf(Tag.of("serviceName", serviceName)),
-                    ref,
-                    AtomicReference<Double>::get,
-                )
+                val avgLatencyRef = avgLatencyGaugeMap.computeIfAbsent(url) { AtomicReference(0.0) }
+                val avgLatency = if (total > 0) stats.latency.toDouble() / total else 0.0
+                avgLatencyRef.set(avgLatency)
+                meterRegistry.gauge("internal_api_avg_latency_ms", tags, avgLatencyRef, AtomicReference<Double>::get)
             }
 
         return builder.build()
@@ -133,14 +123,12 @@ class ApmConfig(
             .aggregate(
                 // 초기값
                 { ApiCallStats(0L, 0L) },
-                // 집계함수: total+1, success+(isSuccess?1:0)
                 { _, ev, agg ->
                     ApiCallStats(
                         total = agg.total + 1,
                         success = agg.success + if (ev.isSuccess) 1 else 0,
                     )
                 },
-                // Serde 지정 (key:String, value:ApiCallStats)
                 Materialized.with(Serdes.String(), metricsSerd),
             ).toStream()
             .foreach { windowKey, stats ->

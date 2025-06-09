@@ -4,4 +4,5 @@ enum class DomainService(
     val database: String,
 ) {
     AUTH("auth"),
+    STORAGE("storage"),
 }
