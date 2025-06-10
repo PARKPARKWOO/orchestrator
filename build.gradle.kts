@@ -67,6 +67,7 @@ dependencies {
     implementation("org.woo:domain-auth:0.2.2")
     implementation("org.woo:apm:0.2.3")
     implementation("org.woo:event:0.0.8")
+    implementation("org.woo:mapper:0.0.2")
 
     // mysql and r2dbc
     runtimeOnly("com.mysql:mysql-connector-j")
@@ -81,4 +82,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     implementation("com.github.loki4j:loki-logback-appender:1.5.1")
+
+    // redis
+    implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
+    implementation("org.redisson:redisson:3.26.0")
 }

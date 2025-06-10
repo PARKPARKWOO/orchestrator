@@ -8,6 +8,8 @@ import org.apache.kafka.streams.StreamsConfig.APPLICATION_ID_CONFIG
 import org.apache.kafka.streams.StreamsConfig.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG
 import org.apache.kafka.streams.StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG
+import org.apache.kafka.streams.StreamsConfig.EXACTLY_ONCE_V2
+import org.apache.kafka.streams.StreamsConfig.PROCESSING_GUARANTEE_CONFIG
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -71,6 +73,7 @@ class KafkaConfig(
         props[BOOTSTRAP_SERVERS_CONFIG] = boostrapServers
         props[DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.String().javaClass.name
         props[DEFAULT_VALUE_SERDE_CLASS_CONFIG] = Serdes.String().javaClass.name
+        props[PROCESSING_GUARANTEE_CONFIG] = EXACTLY_ONCE_V2
         return KafkaStreamsConfiguration(props)
     }
 }

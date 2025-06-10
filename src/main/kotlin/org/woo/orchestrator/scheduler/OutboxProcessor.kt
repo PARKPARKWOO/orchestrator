@@ -52,7 +52,7 @@ class OutboxProcessor(
 
     suspend fun consumeEvnet(aggregate: Aggregate) {
         val outboxes = outboxUseCase.findByAggregateId(aggregate.id)
-        // TODO: Exception 처리
+        // TODO: Exception 처리 DLQ
         outboxes
             .map { outbox ->
                 workerCoroutineScope.async {

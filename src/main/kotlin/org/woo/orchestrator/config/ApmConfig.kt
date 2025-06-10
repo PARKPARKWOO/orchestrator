@@ -20,7 +20,7 @@ import org.woo.apm.log.config.TracingConfig
 import org.woo.apm.pyroscope.EnablePyroscope
 import org.woo.event.api.ApiEventConstants
 import org.woo.event.api.ExternalApiCallEvent
-import org.woo.event.api.InternalApiCallEvent
+import org.woo.orchestrator.kafka.InternalTopologyBuilder
 import org.woo.orchestrator.serd.SerdConverter
 import reactor.core.publisher.Hooks
 import java.time.Duration
@@ -32,14 +32,11 @@ import java.util.concurrent.atomic.AtomicReference
 @Import(TracingConfig::class)
 class ApmConfig(
     private val meterRegistry: MeterRegistry,
+    private val internalTopologyBuilder: InternalTopologyBuilder,
 ) {
-    private val internalSerd: SerdConverter<InternalApiCallEvent> = SerdConverter(InternalApiCallEvent::class.java)
     private val externalSerd: SerdConverter<ExternalApiCallEvent> = SerdConverter(ExternalApiCallEvent::class.java)
-    private val metricsSerd = SerdConverter(ApiCallStats::class.java)
-    private val internalMetricsSerd = SerdConverter(InternalApiCallStats::class.java)
-    private val internalFailureRateMap = ConcurrentHashMap<String, AtomicReference<Double>>()
     private val externalFailureRateMap = ConcurrentHashMap<String, AtomicReference<Double>>()
-    private val prevInternal = ConcurrentHashMap<String, InternalApiCallStats>()
+    private val metricsSerd = SerdConverter(ApiCallStats::class.java)
 
     @Bean
     fun trace(tracer: Tracer): WebFilter = TracingConfig.create(tracer)
@@ -51,59 +48,9 @@ class ApmConfig(
 
     @Bean
     fun internalTopology(
-        builder: StreamsBuilder,
         streamsConfig: KafkaStreamsConfiguration,
-    ): Topology {
-        val internalStream =
-            builder.stream(
-                ApiEventConstants.INTERNAL_API_CALL_TOPIC,
-                Consumed.with(Serdes.String(), internalSerd),
-            )
-
-        // 실패율 및 평균 지연시간 게이지를 위한 맵
-        val failureRateGaugeMap = ConcurrentHashMap<String, AtomicReference<Double>>()
-        val avgLatencyGaugeMap = ConcurrentHashMap<String, AtomicReference<Double>>()
-
-        internalStream
-            .groupBy(
-                { _, ev -> ev.serviceName },
-                Grouped.with(Serdes.String(), internalSerd),
-            ).windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)))
-            .aggregate(
-                { InternalApiCallStats() },
-                { _, ev, agg ->
-                    InternalApiCallStats(
-                        total = agg.total + 1,
-                        success = agg.success + if (ev.statusCode == 0) 1 else 0,
-                        latency = agg.latency + ev.durationMs,
-                    )
-                },
-                Materialized.with(Serdes.String(), internalMetricsSerd),
-            ).toStream()
-            .foreach { windowKey, stats ->
-                val url = windowKey.key()
-                val tags = listOf(Tag.of("uri", url))
-                val total = stats.total.toDouble()
-                val success = stats.success.toDouble()
-                val failure = total - success
-
-                if (total > 0) meterRegistry.counter("internal_api_calls_total", tags).increment(total)
-                if (success > 0) meterRegistry.counter("internal_api_calls_success", tags).increment(success)
-                if (failure > 0) meterRegistry.counter("internal_api_calls_failure", tags).increment(failure)
-
-                val failureRateRef = failureRateGaugeMap.computeIfAbsent(url) { AtomicReference(0.0) }
-                val rate = if (total > 0) failure / total else 0.0
-                failureRateRef.set(rate)
-                meterRegistry.gauge("internal_api_failure_rate", tags, failureRateRef, AtomicReference<Double>::get)
-
-                val avgLatencyRef = avgLatencyGaugeMap.computeIfAbsent(url) { AtomicReference(0.0) }
-                val avgLatency = if (total > 0) stats.latency.toDouble() / total else 0.0
-                avgLatencyRef.set(avgLatency)
-                meterRegistry.gauge("internal_api_avg_latency_ms", tags, avgLatencyRef, AtomicReference<Double>::get)
-            }
-
-        return builder.build()
-    }
+        builder: StreamsBuilder,
+    ): Topology = internalTopologyBuilder.build(builder)
 
     @Bean
     fun externalTopology(
@@ -167,10 +114,4 @@ class ApmConfig(
 data class ApiCallStats(
     val total: Long = 0L,
     val success: Long = 0L,
-)
-
-data class InternalApiCallStats(
-    val total: Long = 0L,
-    val success: Long = 0L,
-    val latency: Long = 0L,
 )

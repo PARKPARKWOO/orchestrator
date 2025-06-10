@@ -1,0 +1,29 @@
+@startuml
+!define RECTANGLE class
+
+participant "Kafka Broker" as Kafka
+participant "Kafka Streams\nApp" as Streams
+participant "Redis\nPub/Sub" as Redis
+participant "Service A" as A
+participant "Service B" as B
+
+== 이벤트 수집 및 집계 ==
+Kafka -> Streams : publish InternalApiEvent(serviceName, statusCode, duration)
+Streams -> Streams : aggregate per-1m window\ncalculate total, success, failure\ncompute failureRate = failure/total
+
+== 실패율 임계치 검사 ==
+alt failureRate > THRESHOLD
+    Streams -> Redis : PUBLISH channel="circuit:open:<serviceName>"\nmessage="{\"service\":\"<serviceName>\"}"
+    note right of Streams: Redis Pub/Sub 로 알림 전송
+
+    Redis -> A : SUBSCRIBE "circuit:open:*"\nonMessage("{service}")
+    A -> A : openCircuitBreaker(service)
+
+    Redis -> B : SUBSCRIBE "circuit:open:*"\nonMessage("{service}")
+    B -> B : openCircuitBreaker(service)
+else failureRate ≤ THRESHOLD
+    Streams -> Redis : PUBLISH channel="circuit:close:<serviceName>"\nmessage="{\"service\":\"<serviceName>\"}"
+    note right of Streams: 정상 복구 시 알림 전송
+end
+
+@enduml
