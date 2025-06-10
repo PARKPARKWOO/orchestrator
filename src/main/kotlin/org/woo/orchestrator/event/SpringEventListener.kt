@@ -17,6 +17,10 @@ class SpringEventListener(
     private val aggregateUseCase: AggregateUseCase,
     private val redisMessagePublisher: RedisMessagePublisher,
 ) {
+    companion object {
+        private const val CIRCUIT_BREAKER_TOPIC_PREFIX = "circuit:grpc"
+    }
+
     private val domainEventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val domainEventCoroutineScope = CoroutineScope(domainEventDispatcher)
 
@@ -39,7 +43,7 @@ class SpringEventListener(
     @EventListener
     fun listenCircuitBreakerEvent(event: CircuitBreakerEvent) {
         circuitBreakerCoroutineScope.launch {
-            redisMessagePublisher.publish(event.serviceName, event.isOpen)
+            redisMessagePublisher.publish(CIRCUIT_BREAKER_TOPIC_PREFIX + event.serviceName, event.isOpen)
         }
     }
 }
