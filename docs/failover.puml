@@ -8,22 +8,29 @@ participant "Service A" as A
 participant "Service B" as B
 
 == 이벤트 수집 및 집계 ==
-Kafka -> Streams : publish InternalApiEvent(serviceName, statusCode, duration)
+Kafka -> Streams : input topic message(serviceName, statusCode)
 Streams -> Streams : aggregate per-1m window\ncalculate total, success, failure\ncompute failureRate = failure/total
 
 == 실패율 임계치 검사 ==
-alt failureRate > THRESHOLD
-    Streams -> Redis : PUBLISH channel="circuit:open:<serviceName>"\nmessage="{\"service\":\"<serviceName>\"}"
+alt request > minimum_request && failureRate > THRESHOLD
+    Streams -> Redis : PUBLISH channel="circuit:grpc:<serviceName>"\nmessage="{"state":"open"}"
     note right of Streams: Redis Pub/Sub 로 알림 전송
 
-    Redis -> A : SUBSCRIBE "circuit:open:*"\nonMessage("{service}")
+    Redis -> A : SUBSCRIBE "circuit:grpc:<serviceName>"\nonMessage("open")
     A -> A : openCircuitBreaker(service)
 
-    Redis -> B : SUBSCRIBE "circuit:open:*"\nonMessage("{service}")
+    Redis -> B : SUBSCRIBE "circuit:grpc:<serviceName>"\nonMessage("open")
     B -> B : openCircuitBreaker(service)
-else failureRate ≤ THRESHOLD
-    Streams -> Redis : PUBLISH channel="circuit:close:<serviceName>"\nmessage="{\"service\":\"<serviceName>\"}"
+else if failureRate ≤ THRESHOLD
+    Streams -> Redis : PUBLISH channel="circuit:close:<serviceName>"\nmessage="{"state":"close"}"
     note right of Streams: 정상 복구 시 알림 전송
+    Redis -> A : SUBSCRIBE "circuit:grpc:<serviceName>"\nonMessage("close")
+        A -> A : closeCircuitBreaker(service)
+
+        Redis -> B : SUBSCRIBE "circuit:grpc:<serviceName>"\nonMessage("close")
+        B -> B : closeCircuitBreaker(service)
+else
+
 end
 
 @enduml

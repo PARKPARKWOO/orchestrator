@@ -9,10 +9,10 @@ import java.util.concurrent.ThreadPoolExecutor
 
 @Configuration
 class ThreadPoolConfig {
-    @Bean("outbox-coordinator")
+    @Bean(name = ["outbox-coordinator"], destroyMethod = "shutdown")
     fun outboxCoordinatorThread(): ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
-    @Bean("outbox-worker")
+    @Bean(name = ["outbox-worker"], destroyMethod = "shutdown")
     fun outboxWorkerThread() =
         ThreadPoolTaskExecutor().apply {
             corePoolSize = 2

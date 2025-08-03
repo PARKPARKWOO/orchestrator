@@ -1,0 +1,41 @@
+@startuml
+!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!includeurl C4P/C4_Context.puml
+!includeurl C4P/C4_Container.puml
+
+' Chat Application Container Diagram
+Title Chat Application - Container Diagram
+
+' System Boundary
+System_Boundary(chatApp, "Chat Application") {
+    Container(websocketServer, "WebSocket Server", "Go/Websocket", "Accepts WS connections and publishes messages to Kafka Topic 1")
+    Container(kafkaStreams, "Kafka Streams Processor", "Java/Kafka Streams", "Consumes from Topic 1, transforms/enriches, publishes to Topic 2 and Redis Pub/Sub")
+    Container(backend, "Backend Service", "Kotlin/Spring Boot", "Consumes from Topic 2, stores to DB, publishes notifications to Redis Pub/Sub")
+    Container(websocketClient, "WebSocket Client", "JavaScript/Browser", "Subscribes via WS and displays incoming chat messages")
+}
+
+' External Systems
+System_Ext(kafka, "Kafka Cluster", "Distributed messaging for chat events")
+System_Ext(redis, "Redis Pub/Sub", "Real-time in-memory pub/sub for notifications")
+
+' Relationships
+elementstyle "WebSocket Server" {
+    Rel(websocketClient, websocketServer, "WebSocket connect/send messages", "WS")
+    Rel(websocketServer, kafka, "Publish chat event to Topic 1", "Kafka Producer")
+}
+
+elementstyle "Kafka Streams Processor" {
+    Rel(kafka, kafkaStreams, "Subscribe to Topic 1", "Kafka Consumer")
+    Rel(kafkaStreams, kafka, "Publish enriched event to Topic 2", "Kafka Producer")
+    Rel(kafkaStreams, redis, "Publish real-time notifications", "Redis Publisher")
+}
+
+elementstyle "Backend Service" {
+    Rel(kafka, backend, "Consume from Topic 2", "Kafka Consumer")
+    Rel(backend, redis, "Publish chat messages to channel: applicationName:roomId", "Redis Publisher")
+}
+
+elementstyle "WebSocket Server" {
+    Rel(redis, websocketServer, "Subscribe to channel and push to clients", "Redis Subscriber")
+}
+@enduml

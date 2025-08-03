@@ -3,13 +3,16 @@ package org.woo.orchestrator.config
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Serdes
+import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
+import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.StreamsConfig.APPLICATION_ID_CONFIG
 import org.apache.kafka.streams.StreamsConfig.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG
 import org.apache.kafka.streams.StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG
 import org.apache.kafka.streams.StreamsConfig.EXACTLY_ONCE_V2
 import org.apache.kafka.streams.StreamsConfig.PROCESSING_GUARANTEE_CONFIG
+import org.apache.kafka.streams.Topology
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,6 +25,7 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.core.ProducerFactory
+import org.woo.orchestrator.kafka.InternalTopologyBuilder
 
 @Configuration
 @EnableKafka
@@ -32,6 +36,7 @@ class KafkaConfig(
     val boostrapServers: String,
     @Value("\${spring.kafka.consumer.group-id}")
     val groupId: String,
+    private val internalTopologyBuilder: InternalTopologyBuilder,
 ) {
     @Bean
     fun consumerFactory(): ConsumerFactory<String, String> {
@@ -43,8 +48,8 @@ class KafkaConfig(
         val props: MutableMap<String, Any> = mutableMapOf()
         props[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = boostrapServers
         props[ConsumerConfig.GROUP_ID_CONFIG] = groupId
-        props[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-        props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        props[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
+        props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
         props[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = true
         return props
     }
@@ -76,4 +81,10 @@ class KafkaConfig(
         props[PROCESSING_GUARANTEE_CONFIG] = EXACTLY_ONCE_V2
         return KafkaStreamsConfiguration(props)
     }
+
+    @Bean
+    fun internalTopology(
+        streamsConfig: KafkaStreamsConfiguration,
+        builder: StreamsBuilder,
+    ): Topology = internalTopologyBuilder.build(builder)
 }

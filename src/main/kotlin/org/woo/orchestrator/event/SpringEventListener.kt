@@ -18,7 +18,7 @@ class SpringEventListener(
     private val redisMessagePublisher: RedisMessagePublisher,
 ) {
     companion object {
-        private const val CIRCUIT_BREAKER_TOPIC_PREFIX = "circuit:grpc"
+        private const val CIRCUIT_BREAKER_TOPIC_PREFIX = "circuit:grpc:"
     }
 
     private val domainEventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()

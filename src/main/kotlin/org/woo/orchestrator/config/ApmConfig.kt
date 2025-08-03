@@ -20,7 +20,6 @@ import org.woo.apm.log.config.TracingConfig
 import org.woo.apm.pyroscope.EnablePyroscope
 import org.woo.event.api.ApiEventConstants
 import org.woo.event.api.ExternalApiCallEvent
-import org.woo.orchestrator.kafka.InternalTopologyBuilder
 import org.woo.orchestrator.serd.SerdConverter
 import reactor.core.publisher.Hooks
 import java.time.Duration
@@ -32,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReference
 @Import(TracingConfig::class)
 class ApmConfig(
     private val meterRegistry: MeterRegistry,
-    private val internalTopologyBuilder: InternalTopologyBuilder,
 ) {
     private val externalSerd: SerdConverter<ExternalApiCallEvent> = SerdConverter(ExternalApiCallEvent::class.java)
     private val externalFailureRateMap = ConcurrentHashMap<String, AtomicReference<Double>>()
@@ -45,12 +43,6 @@ class ApmConfig(
     fun init() {
         Hooks.enableAutomaticContextPropagation()
     }
-
-    @Bean
-    fun internalTopology(
-        streamsConfig: KafkaStreamsConfiguration,
-        builder: StreamsBuilder,
-    ): Topology = internalTopologyBuilder.build(builder)
 
     @Bean
     fun externalTopology(

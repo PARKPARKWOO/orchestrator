@@ -15,7 +15,7 @@ import org.woo.orchestrator.workflow.command.UpdateUserNameCommand
 
 @Component
 class UserNameChangeWorkflow(
-    @Value("\${topic.name-update}")
+    @Value("\${topic.incoming.user.name-update}")
     val topic: String,
     val kafkaProducer: KafkaProducer,
     val mapper: ObjectMapper,
