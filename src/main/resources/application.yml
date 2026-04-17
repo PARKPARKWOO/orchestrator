@@ -1,8 +1,13 @@
+server:
+  shutdown: graceful
+
 spring:
   config:
     import: application-topic.yml
   main:
     web-application-type: reactive
+  lifecycle:
+    timeout-per-shutdown-phase: 45s
   application:
     name: ${spring.profiles.active}-orchestrator
   r2dbc:
@@ -24,6 +29,8 @@ spring:
     streams:
       application-id: ${spring.application.name}
       bootstrap-servers: ${consume.kafka.bootstrap.server}
+      cleanup:
+        on-shutdown: false
   data:
     redis:
       host: ${REDIS_HOST}

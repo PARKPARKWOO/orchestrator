@@ -2,40 +2,44 @@
 !define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
 !includeurl C4P/C4_Context.puml
 !includeurl C4P/C4_Container.puml
+!includeurl C4P/C4_Component.puml
 
-' Chat Application Container Diagram
-Title Chat Application - Container Diagram
+LAYOUT_WITH_LEGEND()
 
-' System Boundary
-System_Boundary(chatApp, "Chat Application") {
-    Container(websocketServer, "WebSocket Server", "Go/Websocket", "Accepts WS connections and publishes messages to Kafka Topic 1")
-    Container(kafkaStreams, "Kafka Streams Processor", "Java/Kafka Streams", "Consumes from Topic 1, transforms/enriches, publishes to Topic 2 and Redis Pub/Sub")
-    Container(backend, "Backend Service", "Kotlin/Spring Boot", "Consumes from Topic 2, stores to DB, publishes notifications to Redis Pub/Sub")
-    Container(websocketClient, "WebSocket Client", "JavaScript/Browser", "Subscribes via WS and displays incoming chat messages")
+title Chat Application - Container Diagram
+
+Person(user, "Client", "사용자가 실시간 채팅을 통해 메시지를 주고받음")
+
+System_Boundary(chatApp, "Chat Application System") {
+    Container(websocketServer, "WebSocket Server", "Go", "실시간 WebSocket 연결 관리, 메시지 라우팅")
+    Container(kafkaStreams, "Kafka Streams Processor", "Java/Kotlin + Kafka Streams", "메시지 스트림 처리, 변환, 라우팅")
+    Container(backend, "Backend Service", "Kotlin/Spring Boot", "비즈니스 로직, 데이터 저장, 사용자 관리")
+    ContainerDb(database, "Message Database", "Cassandra", "채팅 메시지, 사용자 정보, 채팅방 데이터 저장")
 }
 
-' External Systems
-System_Ext(kafka, "Kafka Cluster", "Distributed messaging for chat events")
-System_Ext(redis, "Redis Pub/Sub", "Real-time in-memory pub/sub for notifications")
+System_Ext(kafka, "Apache Kafka", "분산 메시징 시스템\n- Topic 1: raw-chat-messages\n- Topic 2: processed-chat-messages")
+System_Ext(redis, "Redis", "인메모리 캐시 및 Pub/Sub\n- 실시간 알림\n- 세션 관리")
 
-' Relationships
-elementstyle "WebSocket Server" {
-    Rel(websocketClient, websocketServer, "WebSocket connect/send messages", "WS")
-    Rel(websocketServer, kafka, "Publish chat event to Topic 1", "Kafka Producer")
-}
+' User interactions
+Rel(user, websocketServer, "실시간 채팅", "WebSocket\nJSON messages")
 
-elementstyle "Kafka Streams Processor" {
-    Rel(kafka, kafkaStreams, "Subscribe to Topic 1", "Kafka Consumer")
-    Rel(kafkaStreams, kafka, "Publish enriched event to Topic 2", "Kafka Producer")
-    Rel(kafkaStreams, redis, "Publish real-time notifications", "Redis Publisher")
-}
+' WebSocket Server relationships
+Rel(websocketServer, kafka, "원시 채팅 이벤트 발행", "Topic 1\nKafka Producer")
+Rel(redis, websocketServer, "실시간 알림 수신", "Redis Subscriber\nChannel: app:roomId")
+Rel(websocketServer, user, "메시지 푸시", "WebSocket\nReal-time")
 
-elementstyle "Backend Service" {
-    Rel(kafka, backend, "Consume from Topic 2", "Kafka Consumer")
-    Rel(backend, redis, "Publish chat messages to channel: applicationName:roomId", "Redis Publisher")
-}
+' Kafka Streams relationships
+Rel(kafka, kafkaStreams, "원시 메시지 소비", "Topic 1\nKafka Consumer")
+Rel(kafkaStreams, kafka, "처리된 메시지 발행", "Topic 2\nKafka Producer")
+Rel(kafkaStreams, redis, "실시간 알림 발행", "Redis Publisher\nChannel: mirror-view:roomId")
 
-elementstyle "WebSocket Server" {
-    Rel(redis, websocketServer, "Subscribe to channel and push to clients", "Redis Subscriber")
-}
+' Backend Service relationships
+Rel(kafka, backend, "처리된 메시지 소비", "Topic 2\nKafka Consumer")
+Rel(backend, database, "메시지 저장/조회", "JDBC\nSQL queries")
+Rel(backend, redis, "채팅 알림 발행", "Redis Publisher\nChannel: app:roomId")
+
+' Additional relationships for completeness
+Rel_Back(database, backend, "메시지 히스토리", "Paginated queries")
+
+SHOW_LEGEND()
 @enduml
